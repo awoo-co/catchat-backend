@@ -1,0 +1,21 @@
+{
+  "name": "catchat-meow-cdn",
+  "version": "1.0.0",
+  "description": "an docker based backending system for catchat-meow",
+  "license": "MIT",
+  "author": "awoo-co",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "file-type": "^22.0.1",
+    "multer": "^2.2.0",
+    "socket.io": "^4.8.3",
+    "sqlite3": "^6.0.1"
+  }
+}
