@@ -1,5 +1,12 @@
-from nodejs:26.18.0-alpine3.18
-docker run git clone https://github.com/awoo-co/catchat.git
-docker run cd catchat && npm install
-docker run cd catchat && npm run build
-docker run cd catchat && npm run start
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: 3001
+    volumes:
+      - ./chat.db:/app/chat.db
+      - ./uploads:/app/uploads
