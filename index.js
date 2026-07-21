@@ -5,6 +5,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const sqlite3 = require('sqlite3').verbose();
+const { fromFile } = require('file-type');
 
 const app = express();
 const server = http.createServer(app);
@@ -57,10 +58,27 @@ app.get('/messages', (req, res) => {
   );
 });
 
-app.post('/upload', upload.single('file'), (req, res) => {
+app.post('/upload', upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'no_file' });
+  
   const url = `/uploads/${req.file.filename}`;
-  res.json({ url, name: req.file.originalname, mime: req.file.mimetype });
+  const filePath = req.file.path;
+  
+  // Detect MIME type from file magic bytes
+  let mimeType = 'application/octet-stream';
+  try {
+    const fileTypeResult = await fromFile(filePath);
+    if (fileTypeResult && fileTypeResult.mime) {
+      mimeType = fileTypeResult.mime;
+    } else if (req.file.mimetype) {
+      mimeType = req.file.mimetype;
+    }
+  } catch (error) {
+    console.error('Error detecting file type:', error);
+    mimeType = req.file.mimetype || 'application/octet-stream';
+  }
+  
+  res.json({ url, name: req.file.originalname, mime: mimeType });
 });
 
 io.on('connection', socket => {
