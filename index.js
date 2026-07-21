@@ -19,10 +19,19 @@ app.use(express.json());
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
+const dbPath = process.env.DB_PATH || path.join(__dirname, 'chat.db');
+const dbDirectory = path.dirname(dbPath);
+if (!fs.existsSync(dbDirectory)) fs.mkdirSync(dbDirectory, { recursive: true });
+
 const upload = multer({ dest: uploadDir });
 app.use('/uploads', express.static(uploadDir));
 
-const db = new sqlite3.Database(path.join(__dirname, 'chat.db'));
+const db = new sqlite3.Database(dbPath, (err) => {
+  if (err) {
+    console.error('Failed to open SQLite database:', err.message);
+    process.exit(1);
+  }
+});
 db.serialize(() => {
   db.run(`
     CREATE TABLE IF NOT EXISTS messages (

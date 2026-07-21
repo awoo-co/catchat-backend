@@ -17,14 +17,16 @@ services:
     restart: unless-stopped
     volumes:
       - type: bind
-        source: /DATA/AppData/catchat-backend/chat.db
-        target: /app/chat.db
+        source: /DATA/AppData/catchat-backend/data
+        target: /app/data
       - type: bind
         source: /DATA/AppData/catchat-backend/uploads
         target: /app/uploads
     devices: []
     cap_add: []
-    environment: []
+    environment:
+      - DB_PATH=/app/data/chat.db
+      - PORT=3001
     network_mode: bridge
     privileged: false
     container_name: ""
