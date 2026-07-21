@@ -1,4 +1,4 @@
-name: catchat-backend
+name: trusting_jonathan
 services:
   main_app:
     cpu_shares: 10
@@ -36,7 +36,7 @@ x-casaos:
   icon: https://awoo-co.github.io/cdn/favicon.png
   index: /
   is_uncontrolled: false
-  port_map: ""
+  port_map: "3001"
   scheme: http
   store_app_id: trusting_jonathan
   title:
