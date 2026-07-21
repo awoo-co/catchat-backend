@@ -1,0 +1,43 @@
+name: catchat-backend
+services:
+  main_app:
+    cpu_shares: 10
+    command: []
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    image: ghcr.io/awoo-co/catchat-backend:latest
+    labels:
+      icon: https://awoo-co.github.io/cdn/favicon.png
+    ports:
+      - target: 3001
+        published: "3001"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: /DATA/AppData/catchat-backend/chat.db
+        target: /app/chat.db
+      - type: bind
+        source: /DATA/AppData/catchat-backend/uploads
+        target: /app/uploads
+    devices: []
+    cap_add: []
+    environment: []
+    network_mode: bridge
+    privileged: false
+    container_name: ""
+    hostname: ""
+x-casaos:
+  author: self
+  category: self
+  hostname: ""
+  icon: https://awoo-co.github.io/cdn/favicon.png
+  index: /
+  is_uncontrolled: false
+  port_map: ""
+  scheme: http
+  store_app_id: trusting_jonathan
+  title:
+    custom: catchat-backend
