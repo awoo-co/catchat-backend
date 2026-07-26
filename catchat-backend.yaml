@@ -1,4 +1,4 @@
-name: trusting_jonathan
+name: catchat-backend
 services:
   main_app:
     cpu_shares: 10
