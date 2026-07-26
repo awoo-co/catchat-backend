@@ -40,6 +40,6 @@ x-casaos:
   is_uncontrolled: false
   port_map: "3001"
   scheme: http
-  store_app_id: trusting_jonathan
+  store_app_id: catchat-backend
   title:
     custom: catchat-backend
