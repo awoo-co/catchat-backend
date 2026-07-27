@@ -29,7 +29,8 @@ if (!fs.existsSync(dbDirectory)) fs.mkdirSync(dbDirectory, { recursive: true });
 const upload = multer({ dest: uploadDir });
 app.use('/uploads', express.static(uploadDir));
 
-const db = new sqlite3.Database(dbPath, (err) => {
+// Changed from const to let so db can be reassigned during database restore
+let db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
     console.error('Failed to open SQLite database:', err.message);
     process.exit(1);
@@ -37,26 +38,30 @@ const db = new sqlite3.Database(dbPath, (err) => {
 });
 
 // Setup DB schema including file metadata columns
-db.serialize(() => {
-  db.run(`
-    CREATE TABLE IF NOT EXISTS messages (
-      id INTEGER PRIMARY KEY,
-      room TEXT NOT NULL DEFAULT 'catchat 1',
-      text TEXT NOT NULL,
-      sender TEXT NOT NULL,
-      timestamp TEXT NOT NULL,
-      fileUrl TEXT,
-      fileName TEXT,
-      fileType TEXT
-    )
-  `);
+function initDatabaseSchema() {
+  db.serialize(() => {
+    db.run(`
+      CREATE TABLE IF NOT EXISTS messages (
+        id INTEGER PRIMARY KEY,
+        room TEXT NOT NULL DEFAULT 'catchat 1',
+        text TEXT NOT NULL,
+        sender TEXT NOT NULL,
+        timestamp TEXT NOT NULL,
+        fileUrl TEXT,
+        fileName TEXT,
+        fileType TEXT
+      )
+    `);
 
-  // Safe migrations in case table exists without these columns
-  db.run(`ALTER TABLE messages ADD COLUMN room TEXT NOT NULL DEFAULT 'catchat 1'`, () => {});
-  db.run(`ALTER TABLE messages ADD COLUMN fileUrl TEXT`, () => {});
-  db.run(`ALTER TABLE messages ADD COLUMN fileName TEXT`, () => {});
-  db.run(`ALTER TABLE messages ADD COLUMN fileType TEXT`, () => {});
-});
+    // Safe migrations in case table exists without these columns
+    db.run(`ALTER TABLE messages ADD COLUMN room TEXT NOT NULL DEFAULT 'catchat 1'`, () => {});
+    db.run(`ALTER TABLE messages ADD COLUMN fileUrl TEXT`, () => {});
+    db.run(`ALTER TABLE messages ADD COLUMN fileName TEXT`, () => {});
+    db.run(`ALTER TABLE messages ADD COLUMN fileType TEXT`, () => {});
+  });
+}
+
+initDatabaseSchema();
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
@@ -94,6 +99,48 @@ app.post('/upload', upload.single('file'), async (req, res) => {
   }
   
   res.json({ url, name: req.file.originalname, mime: mimeType });
+});
+
+// Endpoint to download the database file (Backup)
+app.get('/backup', (req, res) => {
+  res.download(dbPath, 'chat.db', (err) => {
+    if (err) {
+      console.error('Error downloading backup:', err);
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'backup_failed' });
+      }
+    }
+  });
+});
+
+// Endpoint to restore database from an uploaded .db file (Restore)
+app.post('/restore', upload.single('database'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'no_file' });
+
+  // Close existing database connection safely
+  db.close((err) => {
+    if (err) console.error('Error closing database prior to restore:', err);
+
+    // Overwrite existing chat.db file with uploaded file
+    fs.copyFile(req.file.path, dbPath, (copyErr) => {
+      fs.unlink(req.file.path, () => {}); // Clean temp upload
+
+      if (copyErr) {
+        console.error('Failed to overwrite database:', copyErr);
+        return res.status(500).json({ error: 'restore_failed' });
+      }
+
+      // Re-open database connection
+      db = new sqlite3.Database(dbPath, (reopenErr) => {
+        if (reopenErr) {
+          console.error('Error reopening database:', reopenErr);
+          return res.status(500).json({ error: 'db_reopen_failed' });
+        }
+        initDatabaseSchema();
+        res.json({ success: true, message: 'Database restored successfully!' });
+      });
+    });
+  });
 });
 
 io.on('connection', socket => {
